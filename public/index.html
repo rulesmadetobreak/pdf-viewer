@@ -1,1 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF Viewer Online</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono&display=swap');
+  :root {
+    --bg:#0d0f14;--surface:#161921;--surface2:#1e2230;
+    --border:rgba(255,255,255,0.08);--accent:#4f8ef7;--accent2:#7c5cbf;
+    --text:#e8eaf0;--muted:#7a8099;--danger:#e05c5c;--success:#4caf7d;--radius:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  header{display:flex;align-items:center;justify-content:space-between;padding:16px 32px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:100;}
+  .logo{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:700;}
+  .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .logo span{color:var(--accent);}
+  .hero{text-align:center;padding:56px 24px 40px;max-width:680px;margin:0 auto;}
+  .hero h1{font-size:clamp(26px,5vw,44px);font-weight:700;line-height:1.15;letter-spacing:-1px;margin-bottom:14px;}
+  .hero h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .hero p{color:var(--muted);font-size:15px;line-height:1.7;}
+  .upload-section{max-width:800px;margin:0 auto;padding:0 24px 48px;}
+  .upload-tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:6px;flex-wrap:wrap;}
+  .tab-btn{background:none;border:none;color:var(--muted);font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;padding:8px 16px;border-radius:8px;cursor:pointer;transition:all .2s;}
+  .tab-btn.active{background:var(--accent);color:#fff;}
+  .upload-panel{display:none;}
+  .upload-panel.active{display:block;}
+  .dropzone{border:2px dashed var(--border);border-radius:var(--radius);padding:48px 24px;text-align:center;background:var(--surface);cursor:pointer;position:relative;transition:all .2s;}
+  .dropzone:hover,.dropzone.dragover{border-color:var(--accent);background:rgba(79,142,247,0.05);}
+  .dropzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+  .dz-icon{font-size:48px;margin-bottom:16px;}
+  .dropzone h3{font-size:18px;font-weight:600;margin-bottom:8px;}
+  .dropzone p{color:var(--muted);font-size:14px;margin-bottom:4px;}
+  .file-limit{display:inline-block;margin-top:12px;font-size:12px;padding:4px 12px;background:rgba(79,142,247,0.1);color:var(--accent);border-radius:100px;border:1px solid rgba(79,142,247,0.3);}
+  .link-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;}
+  .link-panel h3{font-size:16px;font-weight:600;margin-bottom:6px;}
+  .link-panel>p{color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.6;}
+  .input-row{display:flex;gap:10px;}
+  .link-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;padding:12px 16px;outline:none;transition:border-color .2s;}
+  .link-input:focus{border-color:var(--accent);}
+  .link-input::placeholder{color:var(--muted);}
+  .btn-primary{background:var(--accent);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;padding:12px 22px;cursor:pointer;white-space:nowrap;transition:opacity .2s;}
+  .btn-primary:hover{opacity:.9;}
+  .how-to{margin-top:20px;background:var(--surface2);border-radius:8px;padding:16px;}
+  .how-to h4{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;}
+  .step{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;font-size:13px;color:var(--muted);line-height:1.5;}
+  .step:last-child{margin-bottom:0;}
+  .step-num{width:20px;height:20px;border-radius:50%;background:rgba(79,142,247,0.15);color:var(--accent);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .viewer-section{max-width:1100px;margin:0 auto;padding:0 24px 80px;}
+  .viewer-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+  .toolbar-btn{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'Outfit',sans-serif;font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;transition:all .2s;}
+  .toolbar-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .toolbar-btn.danger:hover{border-color:var(--danger);color:var(--danger);}
+  .page-info{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;color:var(--muted);font-family:'Space Mono',monospace;margin-left:auto;}
+  .pdf-container{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;min-height:500px;display:flex;flex-direction:column;align-items:center;position:relative;}
+  #pdf-canvas-container{width:100%;overflow-y:auto;max-height:80vh;display:flex;flex-direction:column;align-items:center;padding:20px;gap:12px;}
+  #pdf-canvas-container canvas{max-width:100%;border-radius:4px;box-shadow:0 2px 16px rgba(0,0,0,.5);}
+  .placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:400px;color:var(--muted);gap:12px;}
+  .placeholder-icon{font-size:56px;opacity:.3;}
+  .progress-bar{width:100%;height:3px;background:var(--border);position:absolute;top:0;left:0;display:none;}
+  .progress-fill{height:100%;background:var(--accent);width:0%;transition:width .3s;}
+  .loading-overlay{display:none;position:absolute;inset:0;background:rgba(13,15,20,.75);align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:10;font-size:14px;color:var(--muted);border-radius:var(--radius);}
+  .loading-overlay.show{display:flex;}
+  .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .toast{position:fixed;bottom:28px;right:28px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:13px 18px;font-size:14px;display:flex;align-items:center;gap:10px;transform:translateY(80px);opacity:0;transition:all .3s;z-index:999;max-width:340px;}
+  .toast.show{transform:translateY(0);opacity:1;}
+  .toast.success{border-left:3px solid var(--success);}
+  .toast.error{border-left:3px solid var(--danger);}
+  .toast.info{border-left:3px solid var(--accent);}
+  .status-steps{margin-top:14px;background:var(--surface2);border-radius:8px;padding:14px 16px;display:none;}
+  .status-steps p{font-size:13px;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+  .status-steps p:last-child{margin-bottom:0;}
+  .s-dot{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;transition:background .3s;}
+  .s-dot.done{background:var(--success);}
+  .s-dot.active{background:var(--accent);}
+  .s-dot.fail{background:var(--danger);}
+  @media(max-width:700px){
+    header{padding:12px 16px;}
+    .hero{padding:36px 16px 28px;}
+    .upload-section,.viewer-section{padding-left:16px;padding-right:16px;}
+    .input-row{flex-direction:column;}
+    .btn-primary{width:100%;}
+    .page-info{margin-left:0;}
+  }
+</style>
+</head>
+<body>
 
+<header>
+  <div class="logo">
+    <div class="logo-icon">📄</div>
+    PDF<span>Viewer</span>
+  </div>
+</header>
+
+<section class="hero">
+  <h1>View PDFs Online<br><em>From Any Link</em></h1>
+  <p>Open PDFs from Google Drive, Dropbox, or any URL — directly in your browser, no download needed.</p>
+</section>
+
+<section class="upload-section" id="upload">
+  <div class="upload-tabs">
+    <button class="tab-btn active" onclick="switchTab('local',this)">📂 Local File</button>
+    <button class="tab-btn" onclick="switchTab('gdrive',this)">📁 Google Drive</button>
+    <button class="tab-btn" onclick="switchTab('dropbox',this)">📦 Dropbox</button>
+    <button class="tab-btn" onclick="switchTab('url',this)">🔗 Any URL</button>
+  </div>
+
+  <!-- LOCAL -->
+  <div class="upload-panel active" id="panel-local">
+    <div class="dropzone" id="dropzone">
+      <input type="file" id="file-input" accept=".pdf" onchange="handleFile(event)">
+      <div class="dz-icon">📂</div>
+      <h3>Drop your PDF here</h3>
+      <p>or click to browse your device</p>
+      <span class="file-limit">⚡ Up to 500 MB</span>
+    </div>
+  </div>
+
+  <!-- GOOGLE DRIVE -->
+  <div class="upload-panel" id="panel-gdrive">
+    <div class="link-panel">
+      <h3>📁 Google Drive</h3>
+      <p>Paste your Google Drive share link below. File must be set to <strong style="color:var(--text)">"Anyone with the link"</strong>.</p>
+      <div class="input-row">
+        <input class="link-input" id="gdrive-input" type="text" placeholder="https://drive.google.com/file/d/XXXXX/view?usp=sharing">
+        <button class="btn-primary" onclick="loadGDrive()">Open</button>
+      </div>
+      <div class="status-steps" id="gdrive-status">
+        <p><span class="s-dot" id="sd1"></span> <span id="st1">Extracting file ID from link…</span></p>
+        <p><span class="s-dot" id="sd2"></span> <span id="st2">Fetching file via proxy server…</span></p>
+        <p><span class="s-dot" id="sd3"></span> <span id="st3">Rendering PDF…</span></p>
+      </div>
+      <div class="how-to">
+        <h4>How to get the link</h4>
+        <div class="step"><div class="step-num">1</div><span>Go to drive.google.com → find your PDF</span></div>
+        <div class="step"><div class="step-num">2</div><span>Right click → <strong style="color:var(--text)">Share</strong></span></div>
+        <div class="step"><div class="step-num">3</div><span>Change access to <strong style="color:var(--text)">"Anyone with the link"</strong></span></div>
+        <div class="step"><div class="step-num">4</div><span>Click <strong style="color:var(--text)">Copy link</strong> → paste above</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DROPBOX -->
+  <div class="upload-panel" id="panel-dropbox">
+    <div class="link-panel">
+      <h3>📦 Dropbox</h3>
+      <p>Paste your Dropbox share link. The viewer automatically converts it to a direct download.</p>
+      <div class="input-row">
+        <input class="link-input" id="dropbox-input" type="text" placeholder="https://www.dropbox.com/s/XXXXX/file.pdf?dl=0">
+        <button class="btn-primary" onclick="loadDropbox()">Open</button>
+      </div>
+      <div class="status-steps" id="dropbox-status">
+        <p><span class="s-dot" id="dd1"></span> <span id="dt1">Converting Dropbox link…</span></p>
+        <p><span class="s-dot" id="dd2"></span> <span id="dt2">Fetching file via proxy…</span></p>
+        <p><span class="s-dot" id="dd3"></span> <span id="dt3">Rendering PDF…</span></p>
+      </div>
+      <div class="how-to">
+        <h4>How to get the link</h4>
+        <div class="step"><div class="step-num">1</div><span>Go to dropbox.com → find your PDF</span></div>
+        <div class="step"><div class="step-num">2</div><span>Click <strong style="color:var(--text)">Share</strong> → <strong style="color:var(--text)">Copy link</strong></span></div>
+        <div class="step"><div class="step-num">3</div><span>Paste it above and click Open</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- URL -->
+  <div class="upload-panel" id="panel-url">
+    <div class="link-panel">
+      <h3>🔗 Any PDF URL</h3>
+      <p>Paste any direct link to a PDF file on the internet.</p>
+      <div class="input-row">
+        <input class="link-input" id="url-input" type="text" placeholder="https://example.com/document.pdf">
+        <button class="btn-primary" onclick="loadURL()">Open</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VIEWER -->
+<section class="viewer-section" id="viewer">
+  <div class="viewer-toolbar" id="toolbar" style="display:none;">
+    <button class="toolbar-btn" onclick="prevPage()">◀ Prev</button>
+    <button class="toolbar-btn" onclick="nextPage()">Next ▶</button>
+    <button class="toolbar-btn" onclick="zoomOut()">🔍 −</button>
+    <button class="toolbar-btn" onclick="zoomIn()">🔍 +</button>
+    <button class="toolbar-btn" onclick="fitWidth()">⛶ Fit</button>
+    <button class="toolbar-btn danger" onclick="closeFile()">✕ Close</button>
+    <div class="page-info" id="page-info">Page 1 / 1</div>
+  </div>
+  <div class="pdf-container">
+    <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="loading-overlay" id="loading-overlay">
+      <div class="spinner"></div>
+      <span id="loading-text">Loading…</span>
+    </div>
+    <div class="placeholder" id="placeholder">
+      <div class="placeholder-icon">📄</div>
+      <p>Your PDF will appear here</p>
+    </div>
+    <div id="pdf-canvas-container" style="display:none;"></div>
+  </div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let pdfDoc=null,currentPage=1,totalPages=0,scale=1.2;
+
+function switchTab(tab,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.upload-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-'+tab).classList.add('active');
+}
+
+// Drag & drop
+const dz=document.getElementById('dropzone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)processFile(f);});
+function handleFile(e){const f=e.target.files[0];if(f)processFile(f);}
+function processFile(f){
+  if(f.size>500*1024*1024){showToast('File too large. Max 500 MB.','error');return;}
+  loadPDF(URL.createObjectURL(f));
+}
+
+// Google Drive
+function loadGDrive(){
+  const url=document.getElementById('gdrive-input').value.trim();
+  if(!url){showToast('Please paste a Google Drive link','error');return;}
+  const match=url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if(!match){showToast('Invalid Google Drive link — must contain /file/d/...','error');return;}
+  const fileId=match[1];
+  showStatus('gdrive',0);
+  setStep('sd1','active','st1','Extracting file ID… ✓');
+  // Use our own proxy server
+  const proxyUrl=`/proxy?url=${encodeURIComponent('https://drive.google.com/uc?export=download&id='+fileId+'&confirm=t')}`;
+  showStatus('gdrive',1);
+  setStep('sd1','done');setStep('sd2','active','st2','Fetching via proxy…');
+  loadPDF(proxyUrl,()=>{
+    setStep('sd2','done');setStep('sd3','active','st3','Rendering PDF…');
+  });
+}
+
+// Dropbox
+function loadDropbox(){
+  let url=document.getElementById('dropbox-input').value.trim();
+  if(!url){showToast('Please paste a Dropbox link','error');return;}
+  showStatus('dropbox',0);
+  setStep('dd1','active','dt1','Converting Dropbox link…');
+  // Convert to direct download via dl.dropboxusercontent.com
+  url=url.replace('www.dropbox.com','dl.dropboxusercontent.com')
+         .split('?')[0];
+  setStep('dd1','done');setStep('dd2','active','dt2','Fetching via proxy…');
+  const proxyUrl=`/proxy?url=${encodeURIComponent(url)}`;
+  loadPDF(proxyUrl,()=>{
+    setStep('dd2','done');setStep('dd3','active','dt3','Rendering PDF…');
+  });
+}
+
+// Any URL
+function loadURL(){
+  const url=document.getElementById('url-input').value.trim();
+  if(!url){showToast('Please enter a URL','error');return;}
+  const proxyUrl=`/proxy?url=${encodeURIComponent(url)}`;
+  loadPDF(proxyUrl);
+}
+
+// Core PDF loader
+function loadPDF(url, onFetch){
+  showLoading(true,'Fetching file…');
+  showProgress(0);
+  document.getElementById('placeholder').style.display='none';
+  document.getElementById('pdf-canvas-container').style.display='none';
+
+  const task=pdfjsLib.getDocument({url,withCredentials:false});
+  task.onProgress=d=>{
+    if(d.total>0){
+      const p=Math.round(d.loaded/d.total*100);
+      showProgress(p);
+      document.getElementById('loading-text').textContent='Loading… '+p+'%';
+    }
+  };
+  task.promise.then(pdf=>{
+    if(onFetch)onFetch();
+    pdfDoc=pdf;totalPages=pdf.numPages;currentPage=1;scale=1.2;
+    showProgress(100);
+    renderAll();
+  }).catch(err=>{
+    showLoading(false);showPlaceholder();
+    showToast('Failed to load PDF: '+err.message,'error');
+    console.error(err);
+  });
+}
+
+async function renderAll(){
+  const c=document.getElementById('pdf-canvas-container');
+  c.innerHTML='';
+  document.getElementById('loading-text').textContent='Rendering…';
+  for(let i=1;i<=totalPages;i++){
+    const page=await pdfDoc.getPage(i);
+    const vp=page.getViewport({scale});
+    const canvas=document.createElement('canvas');
+    canvas.id='page-'+i;canvas.height=vp.height;canvas.width=vp.width;
+    c.appendChild(canvas);
+    await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+    showProgress(Math.round(i/totalPages*100));
+  }
+  c.style.display='flex';
+  document.getElementById('toolbar').style.display='flex';
+  updatePageInfo();showLoading(false);
+  showToast('Loaded! '+totalPages+' page(s)','success');
+  document.getElementById('viewer').scrollIntoView({behavior:'smooth'});
+  // Mark all status dots done
+  ['sd3','dd3'].forEach(id=>{const el=document.getElementById(id);if(el)el.className='s-dot done';});
+  c.addEventListener('scroll',trackPage);
+}
+
+function trackPage(){
+  const c=document.getElementById('pdf-canvas-container');
+  for(let i=1;i<=totalPages;i++){
+    const cv=document.getElementById('page-'+i);
+    if(!cv)continue;
+    const r=cv.getBoundingClientRect(),cr=c.getBoundingClientRect();
+    if(r.top>=cr.top-100&&r.top<=cr.top+cr.height/2){currentPage=i;updatePageInfo();break;}
+  }
+}
+
+function prevPage(){if(pdfDoc&&currentPage>1){currentPage--;scrollTo(currentPage);}}
+function nextPage(){if(pdfDoc&&currentPage<totalPages){currentPage++;scrollTo(currentPage);}}
+function scrollTo(n){const c=document.getElementById('page-'+n);if(c)c.scrollIntoView({behavior:'smooth'});updatePageInfo();}
+function updatePageInfo(){document.getElementById('page-info').textContent='Page '+currentPage+' / '+totalPages;}
+function zoomIn(){if(!pdfDoc)return;scale=Math.min(scale+.25,3);reRender();}
+function zoomOut(){if(!pdfDoc)return;scale=Math.max(scale-.25,.5);reRender();}
+function fitWidth(){
+  if(!pdfDoc)return;
+  const w=document.getElementById('pdf-canvas-container').clientWidth-40;
+  pdfDoc.getPage(1).then(p=>{const vp=p.getViewport({scale:1});scale=w/vp.width;reRender();});
+}
+async function reRender(){
+  if(!pdfDoc)return;
+  showLoading(true,'Re-rendering…');
+  const c=document.getElementById('pdf-canvas-container'),save=currentPage;
+  c.innerHTML='';
+  for(let i=1;i<=totalPages;i++){
+    const page=await pdfDoc.getPage(i);
+    const vp=page.getViewport({scale});
+    const canvas=document.createElement('canvas');
+    canvas.id='page-'+i;canvas.height=vp.height;canvas.width=vp.width;
+    c.appendChild(canvas);
+    await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+  }
+  showLoading(false);setTimeout(()=>scrollTo(save),100);
+}
+function closeFile(){
+  pdfDoc=null;currentPage=1;totalPages=0;
+  document.getElementById('pdf-canvas-container').innerHTML='';
+  document.getElementById('pdf-canvas-container').style.display='none';
+  document.getElementById('toolbar').style.display='none';
+  showPlaceholder();showToast('File closed','info');
+}
+
+function showLoading(s,t){if(t)document.getElementById('loading-text').textContent=t;document.getElementById('loading-overlay').classList.toggle('show',s);}
+function showProgress(p){document.getElementById('progress-bar').style.display=p<100?'block':'none';document.getElementById('progress-fill').style.width=p+'%';}
+function showPlaceholder(){document.getElementById('placeholder').style.display='flex';}
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.className='toast '+(type||'info');
+  t.innerHTML=({success:'✅',error:'❌',info:'ℹ️'}[type]||'ℹ️')+' '+msg;
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),5000);
+}
+function showStatus(id){document.getElementById(id+'-status').style.display='block';}
+function setStep(dotId,state,textId,text){
+  const d=document.getElementById(dotId);if(d)d.className='s-dot '+state;
+  if(textId&&text){const el=document.getElementById(textId);if(el)el.textContent=text;}
+}
+
+document.addEventListener('keydown',e=>{
+  if(!pdfDoc)return;
+  if(e.key==='ArrowRight'||e.key==='ArrowDown')nextPage();
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp')prevPage();
+  if(e.key==='+'||e.key==='=')zoomIn();
+  if(e.key==='-')zoomOut();
+});
+</script>
+</body>
+</html>
